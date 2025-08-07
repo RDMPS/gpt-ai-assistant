@@ -337,6 +337,7 @@
 
         <div class="tabs">
             <button class="tab active" onclick="switchTab('search')">搜尋機票</button>
+            <button class="tab" onclick="switchTab('expert')">旅遊達人</button>
             <button class="tab" onclick="switchTab('tracking')">我的追蹤</button>
             <button class="tab" onclick="switchTab('analysis')">價格分析</button>
         </div>
@@ -398,6 +399,76 @@
             </div>
         </div>
 
+        <!-- 旅遊達人策略 Tab -->
+        <div id="expert-tab" class="tab-content">
+            <div class="card">
+                <h2>
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M11,6H13V14H11V6M12,16A1,1 0 0,1 13,17A1,1 0 0,1 12,18A1,1 0 0,1 11,17A1,1 0 0,1 12,16Z" />
+                    </svg>
+                    旅遊達人策略
+                </h2>
+                
+                <p style="color: #666; margin-bottom: 20px;">
+                    使用專業旅遊達人的技巧，找到一般搜尋引擎找不到的超便宜機票！
+                </p>
+
+                <form id="expert-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="expert-origin">出發地</label>
+                            <input type="text" id="expert-origin" placeholder="例：TPE 桃園機場" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="expert-destination">目的地</label>
+                            <input type="text" id="expert-destination" placeholder="例：NRT 成田機場" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="expert-departure-date">出發日期</label>
+                            <input type="date" id="expert-departure-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="expert-flex-days">彈性天數</label>
+                            <select id="expert-flex-days">
+                                <option value="3">±3天</option>
+                                <option value="5">±5天</option>
+                                <option value="7">±7天</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>使用策略（可複選）</label>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;">
+                            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 0;">
+                                <input type="checkbox" id="strategy-flexible" checked> 彈性日期
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 0;">
+                                <input type="checkbox" id="strategy-multicity" checked> 多城市轉機
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 0;">
+                                <input type="checkbox" id="strategy-budget" checked> 低成本航空
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 0;">
+                                <input type="checkbox" id="strategy-hidden"> 隱藏城市 (高風險)
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn">🎯 執行專家搜尋</button>
+                </form>
+
+                <div id="expert-loading" class="loading">
+                    <p>🔍 正在使用旅遊達人策略搜尋...</p>
+                </div>
+
+                <div id="expert-results" class="results"></div>
+            </div>
+        </div>
+
         <!-- 我的追蹤 Tab -->
         <div id="tracking-tab" class="tab-content">
             <div class="card">
@@ -451,6 +522,7 @@
         // 設定今天為最早出發日期
         document.getElementById('departure-date').min = new Date().toISOString().split('T')[0];
         document.getElementById('return-date').min = new Date().toISOString().split('T')[0];
+        document.getElementById('expert-departure-date').min = new Date().toISOString().split('T')[0];
 
         // Tab 切換功能
         function switchTab(tabName) {
@@ -507,6 +579,175 @@
                 showAlert('search-results', '搜尋時發生錯誤：' + error.message, 'error');
             }
         });
+
+        // 專家搜尋表單處理
+        document.getElementById('expert-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                origin: document.getElementById('expert-origin').value,
+                destination: document.getElementById('expert-destination').value,
+                departureDate: document.getElementById('expert-departure-date').value,
+                strategies: getSelectedStrategies()
+            };
+
+            showLoading('expert');
+            
+            try {
+                const response = await fetch('/api/flights/expert/expert-search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+                hideLoading('expert');
+
+                if (result.success) {
+                    displayExpertResults(result.data);
+                } else {
+                    showAlert('expert-results', result.error, 'error');
+                }
+            } catch (error) {
+                hideLoading('expert');
+                showAlert('expert-results', '專家搜尋時發生錯誤：' + error.message, 'error');
+            }
+        });
+
+        // 獲取選中的策略
+        function getSelectedStrategies() {
+            const strategies = [];
+            if (document.getElementById('strategy-flexible').checked) strategies.push('flexible-dates');
+            if (document.getElementById('strategy-multicity').checked) strategies.push('multi-city');
+            if (document.getElementById('strategy-budget').checked) strategies.push('budget-airlines');
+            if (document.getElementById('strategy-hidden').checked) strategies.push('hidden-city');
+            return strategies.length > 0 ? strategies : ['all'];
+        }
+
+        // 顯示專家搜尋結果
+        function displayExpertResults(data) {
+            const resultsDiv = document.getElementById('expert-results');
+            
+            if (data.totalOptionsFound === 0) {
+                resultsDiv.innerHTML = '<div class="alert alert-info">未找到符合條件的進階選項</div>';
+                return;
+            }
+
+            let html = `<h3>🎯 旅遊達人搜尋結果</h3>`;
+            html += `<div class="alert alert-info">找到 ${data.totalOptionsFound} 個進階選項</div>`;
+
+            // 顯示建議
+            if (data.recommendations.length > 0) {
+                html += `<h4>💡 專家建議</h4>`;
+                data.recommendations.forEach(rec => {
+                    const alertClass = rec.type === 'high_risk_high_reward' ? 'alert-error' : 'alert-success';
+                    html += `<div class="alert ${alertClass}">`;
+                    html += `<strong>${rec.message}</strong>`;
+                    if (rec.warning) html += `<br><small>⚠️ ${rec.warning}</small>`;
+                    html += `</div>`;
+                });
+            }
+
+            // 彈性日期結果
+            if (data.results.flexibleDates) {
+                html += `<h4>📅 彈性日期選項</h4>`;
+                const flexResults = data.results.flexibleDates.results.slice(0, 3);
+                flexResults.forEach((result, index) => {
+                    const dayDiff = result.dayOffset;
+                    const dayDesc = dayDiff === 0 ? '目標日期' : 
+                                  dayDiff > 0 ? `延後${dayDiff}天` : `提前${Math.abs(dayDiff)}天`;
+                    
+                    html += `
+                        <div class="flight-item">
+                            <div class="flight-header">
+                                <div class="airline">${result.flight.airline}</div>
+                                <div class="price">$${result.price} TWD</div>
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <strong>${result.date}</strong> (${dayDesc})
+                                <span style="margin-left: 10px; color: #666;">
+                                    ${result.isWeekend ? '🔸週末' : '🔹平日'}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // 多城市轉機結果
+            if (data.results.multiCity && data.results.multiCity.length > 1) {
+                html += `<h4>🔄 多城市轉機選項</h4>`;
+                data.results.multiCity.filter(r => r.savings > 0).forEach(option => {
+                    html += `
+                        <div class="flight-item">
+                            <div class="flight-header">
+                                <div class="airline">經由 ${option.hub} 轉機</div>
+                                <div class="price">$${option.totalPrice} TWD</div>
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <div style="color: #38a169; font-weight: 600;">
+                                    💵 節省 $${option.savings}
+                                </div>
+                                <div style="color: #666; margin-top: 5px;">
+                                    路線：${option.routes.join(' → ')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // 低成本航空結果
+            if (data.results.budgetDeals && data.results.budgetDeals.length > 0) {
+                html += `<h4>🏷️ 低成本航空選項</h4>`;
+                data.results.budgetDeals.slice(0, 3).forEach(deal => {
+                    html += `
+                        <div class="flight-item">
+                            <div class="flight-header">
+                                <div class="airline">${deal.airline}</div>
+                                <div class="price">$${deal.price} ${deal.currency}</div>
+                            </div>
+                            <div style="margin-top: 10px;">
+                                ${deal.dealType === 'red_eye' ? '<span style="color: #667eea;">🌙 紅眼航班</span>' : ''}
+                                ${deal.dealType === 'promotional' ? '<span style="color: #e53e3e;">🎉 促銷價格</span>' : ''}
+                                <div style="color: #666; margin-top: 5px; font-size: 0.9em;">
+                                    💡 ${deal.tips ? deal.tips[0] : '注意額外費用'}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // 隱藏城市結果（如果有）
+            if (data.results.hiddenCity && data.results.hiddenCity.length > 0) {
+                html += `<h4>⚠️ 隱藏城市選項 (高風險)</h4>`;
+                html += `<div class="alert alert-error">
+                    <strong>警告：</strong> 隱藏城市策略違反航空公司條款，使用時請自負風險
+                </div>`;
+                data.results.hiddenCity.slice(0, 2).forEach(deal => {
+                    html += `
+                        <div class="flight-item">
+                            <div class="flight-header">
+                                <div class="airline">${deal.flight.airline}</div>
+                                <div class="price">$${deal.flight.price} ${deal.flight.currency}</div>
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <div>票面路線: ${deal.ticketRoute}</div>
+                                <div>實際路線: ${deal.actualRoute}</div>
+                                <div style="color: #e53e3e; font-size: 0.9em; margin-top: 5px;">
+                                    ⚠️ 風險等級: ${deal.riskLevel}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            resultsDiv.innerHTML = html;
+        }
 
         // 顯示搜尋結果
         function displaySearchResults(flights) {
