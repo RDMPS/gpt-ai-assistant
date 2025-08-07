@@ -4,6 +4,8 @@ import config from '../config/index.js';
 import { validateLineSignature } from '../middleware/index.js';
 import storage from '../storage/index.js';
 import { fetchVersion, getVersion } from '../utils/index.js';
+import flightRoutes from './flight-routes.js';
+import advancedFlightRoutes from './advanced-flight-routes.js';
 
 const app = express();
 
@@ -12,6 +14,15 @@ app.use(express.json({
     req.rawBody = buf.toString();
   },
 }));
+
+// 靜態檔案服務
+app.use(express.static('public'));
+
+// 機票追蹤 API 路由
+app.use('/api/flights', flightRoutes);
+
+// 進階機票策略 API 路由  
+app.use('/api/flights/expert', advancedFlightRoutes);
 
 app.get('/', (req, res) => {
   if (config.APP_URL) {
