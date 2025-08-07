@@ -1,4 +1,4 @@
-import { TYPE_ANALYZE, TYPE_SUM, TYPE_TRANSLATE } from '../../constants/command.js';
+import { TYPE_ANALYZE, TYPE_SUM, TYPE_TRANSLATE, TYPE_FLIGHT } from '../../constants/command.js';
 import COMMAND_ANALYZE_ANALYZE from './analyze-analyze.js';
 import COMMAND_ANALYZE_LITERARILY from './analyze-literarily.js';
 import COMMAND_ANALYZE_MATHEMATICALLY from './analyze-mathematically.js';
@@ -33,6 +33,7 @@ import COMMAND_SYS_REPORT from './sys-report.js';
 import COMMAND_SYS_VERSION from './sys-version.js';
 import COMMAND_TRANSLATE_TO_EN from './translate-to-en.js';
 import COMMAND_TRANSLATE_TO_JA from './translate-to-ja.js';
+import COMMAND_FLIGHT_SEARCH from './flight-search.js';
 
 export const ALL_COMMANDS = [
   COMMAND_ANALYZE_ANALYZE,
@@ -67,6 +68,7 @@ export const ALL_COMMANDS = [
   COMMAND_SYS_VERSION,
   COMMAND_TRANSLATE_TO_EN,
   COMMAND_TRANSLATE_TO_JA,
+  COMMAND_FLIGHT_SEARCH,
 ];
 
 export const INFO_COMMANDS = [
@@ -85,12 +87,14 @@ export const GENERAL_COMMANDS = [
   COMMAND_SUM_SUM,
   COMMAND_ANALYZE_ANALYZE,
   COMMAND_SYS_DEPLOY,
+  COMMAND_FLIGHT_SEARCH,
 ];
 
 export const ENQUIRE_COMMANDS = ALL_COMMANDS.filter(({ type }) => (
   type === TYPE_SUM
   || type === TYPE_ANALYZE
   || type === TYPE_TRANSLATE
+  || type === TYPE_FLIGHT
 ));
 
 export {
@@ -127,4 +131,5 @@ export {
   COMMAND_SYS_VERSION,
   COMMAND_TRANSLATE_TO_EN,
   COMMAND_TRANSLATE_TO_JA,
+  COMMAND_FLIGHT_SEARCH,
 };
